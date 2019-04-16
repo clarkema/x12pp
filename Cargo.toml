@@ -1,0 +1,8 @@
+[package]
+name = "x12pp"
+version = "0.1.0"
+authors = ["Mike Clarke <mike@lambdafunctions.com>"]
+edition = "2018"
+
+[dependencies]
+aho-corasick = "0.7.3"
