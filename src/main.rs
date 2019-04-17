@@ -1,6 +1,6 @@
 use aho_corasick::AhoCorasick;
 
-use std::io::{Read, stdin, stdout};
+use std::io::{Read, Write, stdin, stdout};
 use std::process;
 use std::str;
 
@@ -20,6 +20,8 @@ fn aho () {
         }
 
     }
+
+    stdout().write(&isa_buf).expect("Failed to write ISA segment");
 
     let terminator = str::from_utf8(&isa_buf[105..106]).unwrap();
     let replacement = format!("{}\n", terminator);
