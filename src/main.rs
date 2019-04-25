@@ -8,17 +8,19 @@ use byteorder::{ReadBytesExt, WriteBytesExt};
 
 const BUF_SIZE: usize = 16384;
 
-fn wrapped_write(writer: &mut Write, c: u8) {
-    match writer.write_u8(c) {
-        Ok(_) => {}
-        Err(ref e) if e.kind() == std::io::ErrorKind::BrokenPipe => {
-            process::exit(0);
+macro_rules! wrapped_write {
+    ($writer:expr, $b:expr) => (
+        match $writer.write_u8($b) {
+            Ok(_) => {}
+            Err(ref e) if e.kind() == std::io::ErrorKind::BrokenPipe => {
+                process::exit(0);
+            }
+            Err(err) => {
+                eprintln!("Error writing: {}", err);
+                process::exit(1);
+            }
         }
-        Err(err) => {
-            eprintln!("Error writing: {}", err);
-            process::exit(1);
-        }
-    }
+    );
 }
 
 fn main() {
@@ -48,9 +50,9 @@ fn main() {
     loop {
         match reader.read_u8() {
             Ok(x) => {
-                wrapped_write(&mut writer, x);
+                wrapped_write!(&mut writer, x);
                 if x == terminator {
-                    wrapped_write(&mut writer, 10);
+                    wrapped_write!(&mut writer, 10);
                 }
             }
             Err(ref e) if e.kind() == std::io::ErrorKind::UnexpectedEof => {
