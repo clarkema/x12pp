@@ -1,14 +1,35 @@
-use aho_corasick::AhoCorasick;
+use std::{
+    fs::File,
+    io::{Read, Write, BufWriter, BufReader},
+    os::unix::io::FromRawFd,
+    process,
+};
+use byteorder::{ReadBytesExt, WriteBytesExt};
 
-use std::io::{Read, Write, stdin, stdout};
-use std::process;
-use std::str;
+const BUF_SIZE: usize = 16384;
 
-fn aho () {
-    let mut rdr = stdin();
+fn wrapped_write(writer: &mut Write, c: u8) {
+    match writer.write_u8(c) {
+        Ok(_) => {}
+        Err(ref e) if e.kind() == std::io::ErrorKind::BrokenPipe => {
+            process::exit(0);
+        }
+        Err(err) => {
+            eprintln!("Error writing: {}", err);
+            process::exit(1);
+        }
+    }
+}
+
+fn main() {
+    let stdin = unsafe { File::from_raw_fd(0) };
+    let mut reader = BufReader::with_capacity(BUF_SIZE, stdin);
+    let stdout = unsafe { File::from_raw_fd(1) };
+    let mut writer = BufWriter::with_capacity(BUF_SIZE, stdout);
+
     let mut isa_buf = vec![0u8; 106];
 
-    match rdr.read_exact(&mut isa_buf) {
+    match reader.read_exact(&mut isa_buf) {
         Ok(_) => {}
         Err(ref e) if e.kind() == std::io::ErrorKind::UnexpectedEof => {
             eprintln!("ISA segment is too short.");
@@ -18,30 +39,29 @@ fn aho () {
             eprintln!("Error processing stream: {}", err);
             process::exit(1);
         }
-
     }
 
-    stdout().write(&isa_buf).expect("Failed to write ISA segment");
+    writer.write(&isa_buf).expect("Failed to write ISA segment");
+    writer.write(b"\n").expect("Failed to write newline after ISA");
+    let terminator: u8 = isa_buf[105];
 
-    let terminator = str::from_utf8(&isa_buf[105..106]).unwrap();
-    let replacement = format!("{}\n", terminator);
-    let patterns = &[terminator];
-    let replace_with = &[replacement];
-
-    let ac = AhoCorasick::new(patterns);
-
-    match ac.stream_replace_all(rdr, &mut stdout(), replace_with) {
-        Ok(_) => {}
-        Err(ref e) if e.kind() == std::io::ErrorKind::BrokenPipe => {
-            process::exit(1);
-        }
-        Err(err) => {
-            eprintln!("Error processing stream: {}", err);
-            process::exit(1);
+    loop {
+        match reader.read_u8() {
+            Ok(x) => {
+                wrapped_write(&mut writer, x);
+                if x == terminator {
+                    wrapped_write(&mut writer, 10);
+                }
+            }
+            Err(ref e) if e.kind() == std::io::ErrorKind::UnexpectedEof => {
+                writer.flush().unwrap();
+                process::exit(0);
+            }
+            Err(err) => {
+                eprintln!("Error processing stream: {}", err);
+                writer.flush().unwrap();
+                process::exit(1);
+            }
         }
     }
-}
-
-fn main() {
-    aho();
 }
