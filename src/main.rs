@@ -48,6 +48,7 @@ fn main() {
 
     let terminator: u8 = buf[105];
 
+    let mut gobble_mode: bool = true;
     let mut buf = vec![0u8; BUF_SIZE];
     let mut i: usize;
     let mut start: usize;
@@ -60,10 +61,52 @@ fn main() {
                 }
                 i = 0;
                 start = 0;
-                while i < n {
+
+                if gobble_mode {
+                    while (i < n) && (buf[i] == 13) {
+                        i = i + 1;
+                    }
+                    i = i + 1;
+                    start = i;
+                    gobble_mode = false;
+                }
+
+                'outer: loop {
+                    if i == n {
+                        writer.write(&buf[start..i]);
+                        break;
+                    }
                     if buf[i] == terminator {
                         writer.write(&buf[start..i + 1]);
                         wrapped_write!(writer, b'\n');
+
+                        /*
+                         * If we've found a segment terminator, we need to
+                         * discard any newlines that follow it.  Unfortunately
+                         * these might span the boundary of the buffer and into
+                         * the next read.
+                         *
+                         * 1. Check whether we've hit the end of the buffer.
+                         *    If so, set a flag to continue gobbling newlines
+                         *    and read some more data.
+                         * 2. Otherwise, if we've found a newline, advance
+                         *    beyond it.
+                         * 3. And if not, break back into normal scanning mode
+                         */
+                        i = i + 1;
+                        loop {
+                            if i == n {
+                                gobble_mode = true;
+                                break 'outer;
+                            }
+                            if buf[i] == 13 {
+                                i = i + 1;
+                            }
+                            else {
+                                break;
+                            }
+                        }
+
                         start = i + 1;
                     }
                     i = i + 1;
