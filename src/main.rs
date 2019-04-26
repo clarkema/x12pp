@@ -1,6 +1,6 @@
 use std::{
     fs::File,
-    io::{Read, Write, BufWriter, BufReader},
+    io::{Read, Write, BufWriter, BufReader, stdin, stdout},
     os::unix::io::FromRawFd,
     process,
 };
@@ -26,12 +26,12 @@ macro_rules! wrapped_write {
 fn main() {
     let stdin = unsafe { File::from_raw_fd(0) };
     let mut reader = BufReader::with_capacity(BUF_SIZE, stdin);
-    let stdout = unsafe { File::from_raw_fd(1) };
-    let mut writer = BufWriter::with_capacity(BUF_SIZE, stdout);
+    let stdout = stdout();
+    let mut writer = BufWriter::with_capacity(BUF_SIZE, stdout.lock());
 
-    let mut isa_buf = vec![0u8; 106];
+    let mut buf = vec![0u8; 106];
 
-    match reader.read_exact(&mut isa_buf) {
+    match reader.read_exact(&mut buf) {
         Ok(_) => {}
         Err(ref e) if e.kind() == std::io::ErrorKind::UnexpectedEof => {
             eprintln!("ISA segment is too short.");
@@ -43,16 +43,30 @@ fn main() {
         }
     }
 
-    writer.write(&isa_buf).expect("Failed to write ISA segment");
-    writer.write(b"\n").expect("Failed to write newline after ISA");
-    let terminator: u8 = isa_buf[105];
+    writer.write(&buf).expect("Failed to write ISA segment");
+    wrapped_write!(writer, b'\n');
 
+    let terminator: u8 = buf[105];
+
+    let mut buf = vec![0u8; BUF_SIZE];
+    let mut i: usize;
+    let mut start: usize;
     loop {
-        match reader.read_u8() {
-            Ok(x) => {
-                wrapped_write!(&mut writer, x);
-                if x == terminator {
-                    wrapped_write!(&mut writer, 10);
+        match reader.read(&mut buf) {
+            Ok(n) => {
+                if n == 0 {
+                    writer.flush().unwrap();
+                    process::exit(0);
+                }
+                i = 0;
+                start = 0;
+                while i < n {
+                    if buf[i] == terminator {
+                        writer.write(&buf[start..i + 1]);
+                        wrapped_write!(writer, b'\n');
+                        start = i + 1;
+                    }
+                    i = i + 1;
                 }
             }
             Err(ref e) if e.kind() == std::io::ErrorKind::UnexpectedEof => {
