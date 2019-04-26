@@ -1,10 +1,10 @@
 use std::{
     fs::File,
-    io::{Read, Write, BufWriter, BufReader, stdin, stdout},
+    io::{Read, Write, BufWriter, BufReader, stdout},
     os::unix::io::FromRawFd,
     process,
 };
-use byteorder::{ReadBytesExt, WriteBytesExt};
+use byteorder::{WriteBytesExt};
 
 const BUF_SIZE: usize = 16384;
 
