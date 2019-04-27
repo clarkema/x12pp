@@ -2,20 +2,64 @@
 
 `x12pp` is a CLI pretty-printer for X12 EDI files.
 
-X12 is an arcane format consisting of a fixed-length header
-followed by a series of segments, each separated by a segment
-terminator character.
+X12 is an arcane format consisting of a fixed-length header followed by a series
+of segments, each separated by a segment terminator character.
 
-These segments are generally not separated by newlines, so
-extracting a range of lines from a file or taking a peek at
-the start using the usual Unix toolbox becomes unnecessarily
-painful.
+These segments are generally not separated by newlines, so extracting a range of
+lines from a file or taking a peek at the start using the usual Unix toolbox
+becomes unnecessarily painful.
 
-Of course, you could split the lines using `sed -e 's/~/~\n'`
-and get on with your day, but:
+Of course, you could split the lines using `sed -e 's/~/~\n/g'` and get on with
+your day, but:
 
-  1. although the `~` is the traditional and most widely-used
-     segment terminator it's not required -- each X12 file
-     specifies its own terminators as part of the header.
-  2. using `sed` or `perl` would mean I wouldn't have a chance
-     to explore fast stream processing in Rust.
+  1. although the `~` is the traditional and most widely-used segment terminator
+     it's not required -- each X12 file specifies its own terminators as part of
+    the header.
+  2. using `sed` or `perl` would mean I wouldn't have a chance to explore fast
+     stream processing in Rust.
+
+So here we are.
+
+## Installation
+
+### From source
+
+Assuming you have Rust and Cargo installed on your machine, clone this
+repository and then from the root run `cargo build --release`.  This will
+result in a statically-compiled binary at `target/release/x12pp`, which you can
+then copy wherever you need.
+
+## Usage
+
+Right now `x12pp` doesn't deal with files directly; it works only with pipelines
+through STDIN and STDOUT.
+
+`$ x12pp < FILE > NEWFILE`
+
+## Benchmarks
+
+All tests were performed on an Intel Core i9-7940X, using a 1.3G X12 test file
+located on a RAM disk.  In each case, shell redirection was used to
+pipe the file through the test command and into `/dev/null` in order to get
+as close as possible to measuring pure processing time.  For example:
+
+`$ time sed -e 's/~/~\n/g' < test-file > /dev/null`
+
+| Tool        | Command                       | Terminator detection | Pre-wrapped? | SIGPIPE? | Time  |
+|-------------|-------------------------------|----------------------|--------------|----------|-------|
+| x12pp       | `x12pp`                       | ✓                    | ✓            | ✓        | 1.05s |
+| GNU sed 4.7 | `sed -e s/~/~\n/g`            | ✗                    | ✗            | ✗        | 7.6s  |
+| perl 5.28.2 | `perl -pe 's/~[\r\n]*/~\n/g'` | ✗                    | ✓ but slower | ✗        | 8.5s  |
+| edicat      | `edicat`                      | ✓                    | ✓            | ✓        | 7m41s |
+
+### Notes
+
+1. 'SIGPIPE' refers to whether a command can return a partial result without
+   having to process the entire input.  One of the motivations for `x12pp` was
+   to be able to run `x12pp < FILE | head -n 100` without having to plough
+   through a multi-gigabyte file.
+2. Of course you could write a Perl script that _did_ correctly read the
+   segment terminator before processing the rest of the file.
+3. Perl produces the correct output with input data that is already wrapped,
+   but _much_ slower; around 24 seconds compared to 8.5.
+4. See https://github.com/notpeter/edicat for edicat
