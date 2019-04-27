@@ -1,4 +1,5 @@
 use byteorder::WriteBytesExt; // for write_u8;
+use memchr::memchr;
 use std::{
     fs::File,
     io,
@@ -8,7 +9,8 @@ use std::{
 };
 
 const BUF_SIZE: usize = 16384;
-const NL: u8 = 13;
+const NL: u8 = 10;
+const CR: u8 = 13;
 
 fn run() -> io::Result<()> {
     let stdin = unsafe { File::from_raw_fd(0) };
@@ -26,15 +28,15 @@ fn run() -> io::Result<()> {
         }
     })?;
 
-    writer.write_all(&buf)?;
-    writer.write_u8(b'\n')?;
-
     let terminator: u8 = buf[105];
+    writer.write_all(&buf)?;
+    writer.write_u8(NL)?;
 
     buf = vec![0u8; BUF_SIZE];
     let mut gobble_mode: bool = true;
     let mut i: usize;
     let mut start: usize;
+
     loop {
         let n = reader.read(&mut buf)?;
         if n == 0 {
@@ -44,47 +46,47 @@ fn run() -> io::Result<()> {
         start = 0;
 
         if gobble_mode {
-            while (i < n) && (buf[i] == 13) {
+            while (i < n) && (buf[i] == NL || buf[i] == CR) {
                 i += 1;
             }
-            i += 1;
             start = i;
             gobble_mode = false;
         }
 
-        'segment: loop {
-            if i == n {
-                writer.write_all(&buf[start..i])?;
-                break;
-            }
-            if buf[i] == terminator {
-                writer.write_all(&buf[start..=i])?;
-                writer.write_u8(b'\n')?;
+        'segment: while start < n {
+            match memchr(terminator, &buf[start..n]) {
+                Some(offset) => {
+                    writer.write_all(&buf[start..=start + offset])?;
+                    writer.write_u8(NL)?;
 
-                // If we've found a segment terminator, we need to discard any
-                // newlines that follow it.  Unfortunately these might span the
-                // boundary of the buffer and into the next read.
-                //
-                // 1. Check whether we've hit the end of the buffer.  If so,
-                //    set a flag to continue gobbling newlines and read some
-                //    more data.
-                // 2. Otherwise, if we've found a newline, advance beyond it.
-                // 3. And if not, break back into normal scanning mode
-                i += 1;
-                loop {
-                    if i == n {
-                        gobble_mode = true;
-                        break 'segment;
+                    // If we've found a segment terminator, we need to discard any
+                    // newlines that follow it.  Unfortunately these might span the
+                    // boundary of the buffer and into the next read.
+                    //
+                    // 1. Check whether we've hit the end of the buffer.  If so,
+                    //    set a flag to continue gobbling newlines and read some
+                    //    more data.
+                    // 2. Otherwise, if we've found a newline, advance beyond it.
+                    // 3. And if not, break back into normal scanning mode
+                    let mut i = start + offset + 1;
+                    loop {
+                        if i == n {
+                            gobble_mode = true;
+                            break 'segment;
+                        }
+                        if buf[i] == NL || buf[i] == CR {
+                            i += 1;
+                        } else {
+                            break;
+                        }
                     }
-                    if buf[i] == NL {
-                        i += 1;
-                    } else {
-                        break;
-                    }
+                    start = i;
                 }
-                start = i + 1;
+                None => {
+                    writer.write_all(&buf[start..n])?;
+                    break;
+                }
             }
-            i += 1;
         }
     }
 }
