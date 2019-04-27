@@ -1,11 +1,11 @@
+use byteorder::WriteBytesExt; // for write_u8;
 use std::{
     fs::File,
     io,
-    io::{Read, Write, BufWriter, BufReader, stdout},
+    io::{stdout, BufReader, BufWriter, Read, Write},
     os::unix::io::FromRawFd,
     process,
 };
-use byteorder::{WriteBytesExt}; // for write_u8
 
 const BUF_SIZE: usize = 16384;
 const NL: u8 = 13;
@@ -21,8 +21,7 @@ fn run() -> io::Result<()> {
     reader.read_exact(&mut buf).map_err(|e| {
         if e.kind() == io::ErrorKind::UnexpectedEof {
             io::Error::new(e.kind(), "ISA segment is too short.")
-        }
-        else{
+        } else {
             e
         }
     })?;
@@ -38,7 +37,9 @@ fn run() -> io::Result<()> {
     let mut start: usize;
     loop {
         let n = reader.read(&mut buf)?;
-        if n == 0 { return Ok(()) }
+        if n == 0 {
+            return Ok(());
+        }
         i = 0;
         start = 0;
 
@@ -77,8 +78,7 @@ fn run() -> io::Result<()> {
                     }
                     if buf[i] == NL {
                         i += 1;
-                    }
-                    else {
+                    } else {
                         break;
                     }
                 }
