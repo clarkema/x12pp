@@ -2,6 +2,11 @@
 name = "x12pp"
 version = "0.1.0"
 authors = ["Mike Clarke <mike@lambdafunctions.com>"]
+description = "A CLI pretty-printer for X12 EDI files"
+homepage = "https://github.com/clarkema/x12pp"
+readme = "README.md"
+keywords = ["x12", "edi"]
+license = "GPL-3.0-only"
 edition = "2018"
 
 [dependencies]
