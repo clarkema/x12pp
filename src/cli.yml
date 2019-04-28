@@ -1,0 +1,4 @@
+name: x12pp
+version: "0.1.0"
+author: Mike Clarke <mike@lambdafunctions.com>
+about: X12 pretty-printer

@@ -1,4 +1,7 @@
 use byteorder::WriteBytesExt; // for write_u8;
+#[macro_use]
+extern crate clap;
+use clap::App;
 use memchr::memchr;
 use std::{
     fs::File,
@@ -92,6 +95,9 @@ fn run() -> io::Result<()> {
 }
 
 fn main() {
+    let yaml = load_yaml!("cli.yml");
+    let _matches = App::from_yaml(yaml).get_matches();
+
     match run() {
         Ok(_) => {}
         Err(ref e) if e.kind() == std::io::ErrorKind::BrokenPipe => {}
