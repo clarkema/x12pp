@@ -22,12 +22,31 @@ So here we are.
 
 ## Installation
 
+### Homebrew
+
+```
+$ brew tap clarkema/nomad
+$ brew install x12pp
+```
+
+### With cargo
+
+```
+$ cargo install x12pp
+```
+
 ### From source
 
-Assuming you have Rust and Cargo installed on your machine, clone this
-repository and then from the root run `cargo build --release`.  This will
-result in a statically-compiled binary at `target/release/x12pp`, which you can
-then copy wherever you need.
+x12pp is written in Rust, so you'll need an up-to-date Rust installation in
+order to build it from source.  The result is a statically-compiled binary at
+`target/release/x12pp`, which you can copy wherever you need.
+
+```
+$ git clone https://github.com/clarkema/x12pp
+$ cd x12pp
+$ cargo build --release
+$ ./target/release/x12pp --version
+```
 
 ## Usage
 
