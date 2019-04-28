@@ -34,6 +34,9 @@ then copy wherever you need.
 ```
 $ x12pp < FILE > NEWFILE
 $ x12pp FILE -o NEWFILE
+
+# Strip newlines out instead with:
+$ x12pp --uglify FILE
 ```
 
 See manpage or `--help` for more.
