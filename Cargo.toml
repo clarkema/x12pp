@@ -1,6 +1,6 @@
 [package]
 name = "x12pp"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Mike Clarke <clarkema@clarkema.org>"]
 description = "A CLI pretty-printer for X12 EDI files"
 homepage = "https://github.com/clarkema/x12pp"

@@ -130,7 +130,7 @@ fn main() {
 
     if env::args().len() > 1 {
         matches = clap_app!(x12pp =>
-            (version: "0.1.0")
+            (version: "0.2.0")
             (author: "Mike Clarke <clarkema@clarkema.org>")
             (about: "X12 pretty-printer")
             (@arg INPUT: "Input file.  Omit or use '-' for STDIN")
