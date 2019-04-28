@@ -1,7 +1,6 @@
 use byteorder::WriteBytesExt; // for write_u8;
 #[macro_use]
 extern crate clap;
-use clap::App;
 use memchr::memchr;
 use std::{
     fs::File,
@@ -95,8 +94,11 @@ fn run() -> io::Result<()> {
 }
 
 fn main() {
-    let yaml = load_yaml!("cli.yml");
-    let _matches = App::from_yaml(yaml).get_matches();
+    let _matches = clap_app!(x12pp =>
+        (version: "0.1.0")
+        (author: "Mike Clarke <mike@lambdafunctions.com>")
+        (about: "X12 pretty-printer")
+    ).get_matches();
 
     match run() {
         Ok(_) => {}

@@ -16,4 +16,4 @@ memchr = "2.2.0"
 [dependencies.clap]
 version = "2.33.0"
 default-features = false
-features = ["yaml", "wrap_help"]
+features = ["wrap_help"]
