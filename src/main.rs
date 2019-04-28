@@ -3,9 +3,10 @@ use byteorder::WriteBytesExt; // for write_u8;
 extern crate clap;
 use memchr::memchr;
 use std::{
+    env,
     fs::File,
     io,
-    io::{stdout, BufReader, BufWriter, Read, Write},
+    io::{BufReader, BufWriter, Read, Write},
     os::unix::io::FromRawFd,
     process,
 };
@@ -14,11 +15,35 @@ const BUF_SIZE: usize = 16384;
 const NL: u8 = 10;
 const CR: u8 = 13;
 
-fn run() -> io::Result<()> {
-    let stdin = unsafe { File::from_raw_fd(0) };
-    let mut reader = BufReader::with_capacity(BUF_SIZE, stdin);
-    let stdout = stdout();
-    let mut writer = BufWriter::with_capacity(BUF_SIZE, stdout.lock());
+fn run(input_path: &str, output_path: &str) -> io::Result<()> {
+    let mut reader = if input_path == "-" {
+        let stdin = unsafe { File::from_raw_fd(0) };
+        BufReader::with_capacity(BUF_SIZE, stdin)
+    } else {
+        BufReader::with_capacity(
+            BUF_SIZE,
+            File::open(input_path).map_err(|e| {
+                io::Error::new(
+                    e.kind(),
+                    format!("Failed to open '{}': {}", input_path, e),
+                )
+            })?,
+        )
+    };
+    let mut writer = if output_path == "-" {
+        let stdout = unsafe { File::from_raw_fd(1) };
+        BufWriter::with_capacity(BUF_SIZE, stdout)
+    } else {
+        BufWriter::with_capacity(
+            BUF_SIZE,
+            File::create(output_path).map_err(|e| {
+                io::Error::new(
+                    e.kind(),
+                    format!("Failed to create '{}': {}", output_path, e),
+                )
+            })?,
+        )
+    };
 
     let mut buf = vec![0u8; 106];
 
@@ -94,13 +119,25 @@ fn run() -> io::Result<()> {
 }
 
 fn main() {
-    let _matches = clap_app!(x12pp =>
-        (version: "0.1.0")
-        (author: "Mike Clarke <mike@lambdafunctions.com>")
-        (about: "X12 pretty-printer")
-    ).get_matches();
+    let mut input_path = "-";
+    let mut output_path = "-";
+    let matches;
 
-    match run() {
+    if env::args().len() > 1 {
+        matches = clap_app!(x12pp =>
+            (version: "0.1.0")
+            (author: "Mike Clarke <mike@lambdafunctions.com>")
+            (about: "X12 pretty-printer")
+            (@arg INPUT: "Input file.  Omit or use '-' for STDIN")
+            (@arg output: -o --output +takes_value "Output file.")
+        )
+        .get_matches();
+
+        input_path = matches.value_of("INPUT").unwrap_or("-");
+        output_path = matches.value_of("output").unwrap_or("-");
+    }
+
+    match run(input_path, output_path) {
         Ok(_) => {}
         Err(ref e) if e.kind() == std::io::ErrorKind::BrokenPipe => {}
         Err(err) => {

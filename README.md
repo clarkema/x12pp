@@ -31,10 +31,12 @@ then copy wherever you need.
 
 ## Usage
 
-Right now `x12pp` doesn't deal with files directly; it works only with pipelines
-through STDIN and STDOUT.
+```
+$ x12pp < FILE > NEWFILE
+$ x12pp FILE -o NEWFILE
+```
 
-`$ x12pp < FILE > NEWFILE`
+See manpage or `--help` for more.
 
 ## Benchmarks
 

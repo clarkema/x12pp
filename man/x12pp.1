@@ -3,19 +3,28 @@
 x12pp \- pretty printer for X12 EDI files
 .SH SYNOPSIS
 .B x12pp
-< INPUT > OUTPUT
+[\fIOPTIONS\fP]... [INPUT] -o OUTPUT
+.P
+cat [...] |
+.B x12pp
+| head
 .SH DESCRIPTION
 .I x12pp
 is a filter that pretty-prints X12 files passed through it.
-
-`Pretty printing' in this case means automatically detecting the segment 
+.P
+"Pretty printing" in this case means automatically detecting the segment
 terminator from the ISA header and then splitting the input data into
 one line per segment.
-.SH BUGS
-Right now
-.I x12pp
-only reads from STDIN and outputs to STDOUT.  There is no support for
-processing files directly.
+.TP
+.B -h, --help
+print a brief usage message
+.TP
+.B -V, --version
+print version information
+.TP
+.B -o, --output
+specify the output file; STDOUT if omitted
+.
 .SH AUTHOR
 Mike Clarke <mike@lambdafunctions.com>
 .SH HOME
