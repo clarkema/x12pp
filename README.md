@@ -72,7 +72,7 @@ as close as possible to measuring pure processing time.  For example:
 | Tool        | Command                       | Terminator detection | Pre-wrapped? | SIGPIPE? | Time  |
 |-------------|-------------------------------|----------------------|--------------|----------|-------|
 | x12pp       | `x12pp`                       | ✓                    | ✓            | ✓        | 1.3s  |
-| GNU sed 4.7 | `sed -e s/~/~\n/g`            | ✗                    | ✗            | ✗        | 7.6s  |
+| GNU sed 4.7 | `sed -e 's/~/~\n/g'`          | ✗                    | ✗            | ✗        | 7.6s  |
 | perl 5.28.2 | `perl -pe 's/~[\r\n]*/~\n/g'` | ✗                    | ✓ but slower | ✗        | 8.5s  |
 | edicat      | `edicat`                      | ✓                    | ✓            | ✓        | 7m41s |
 
