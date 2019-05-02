@@ -7,7 +7,6 @@ use std::{
     fs::File,
     io,
     io::{BufReader, BufWriter, Read, Write},
-    os::unix::io::FromRawFd,
     process,
 };
 
@@ -16,11 +15,14 @@ const NL: u8 = 10;
 const CR: u8 = 13;
 
 fn run(input_path: &str, output_path: &str, uglify: bool) -> io::Result<()> {
-    let mut reader = if input_path == "-" {
-        let stdin = unsafe { File::from_raw_fd(0) };
-        BufReader::with_capacity(BUF_SIZE, stdin)
+    let stdin: io::Stdin;
+    let stdout: io::Stdout;
+
+    let mut reader: Box<io::Read> = if input_path == "-" {
+        stdin = io::stdin();
+        Box::new(BufReader::with_capacity(BUF_SIZE, stdin.lock()))
     } else {
-        BufReader::with_capacity(
+        Box::new(BufReader::with_capacity(
             BUF_SIZE,
             File::open(input_path).map_err(|e| {
                 io::Error::new(
@@ -28,13 +30,13 @@ fn run(input_path: &str, output_path: &str, uglify: bool) -> io::Result<()> {
                     format!("Failed to open '{}': {}", input_path, e),
                 )
             })?,
-        )
+        ))
     };
-    let mut writer = if output_path == "-" {
-        let stdout = unsafe { File::from_raw_fd(1) };
-        BufWriter::with_capacity(BUF_SIZE, stdout)
+    let mut writer: Box<io::Write> = if output_path == "-" {
+        stdout = io::stdout();
+        Box::new(BufWriter::with_capacity(BUF_SIZE, stdout.lock()))
     } else {
-        BufWriter::with_capacity(
+        Box::new(BufWriter::with_capacity(
             BUF_SIZE,
             File::create(output_path).map_err(|e| {
                 io::Error::new(
@@ -42,7 +44,7 @@ fn run(input_path: &str, output_path: &str, uglify: bool) -> io::Result<()> {
                     format!("Failed to create '{}': {}", output_path, e),
                 )
             })?,
-        )
+        ))
     };
 
     let mut buf = vec![0u8; 106];
