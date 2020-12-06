@@ -18,7 +18,7 @@ fn run(input_path: &str, output_path: &str, uglify: bool) -> io::Result<()> {
     let stdin: io::Stdin;
     let stdout: io::Stdout;
 
-    let mut reader: Box<io::Read> = if input_path == "-" {
+    let mut reader: Box<dyn io::Read> = if input_path == "-" {
         stdin = io::stdin();
         Box::new(BufReader::with_capacity(BUF_SIZE, stdin.lock()))
     } else {
@@ -32,7 +32,7 @@ fn run(input_path: &str, output_path: &str, uglify: bool) -> io::Result<()> {
             })?,
         ))
     };
-    let mut writer: Box<io::Write> = if output_path == "-" {
+    let mut writer: Box<dyn io::Write> = if output_path == "-" {
         stdout = io::stdout();
         Box::new(BufWriter::with_capacity(BUF_SIZE, stdout.lock()))
     } else {
